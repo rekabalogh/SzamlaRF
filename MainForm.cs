@@ -12,10 +12,15 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
 
+
+
 namespace Rendeleskezelo
 {
+
+
     public partial class MainForm : Form
     {
+
         List<string> products = new List<string>();
         List<int> quantities = new List<int>();
         List<decimal> prices = new List<decimal>();
@@ -29,6 +34,10 @@ namespace Rendeleskezelo
             BetoltesRendelesek();
             //PopulateStatusComboBoxFromApi();
             orderId = ((OrderDTO)orderDTOBindingSource.Current).bvin;
+        }
+        public DataGridView OrdersGrid
+        {
+            get { return dataGridViewOrders; }
         }
 
 
@@ -103,6 +112,45 @@ namespace Rendeleskezelo
         private void buttonMinta_Click(object sender, EventArgs e)
         {
             GenerateXML();
+        }
+        public void GenerateXMLToFile(string filePath)
+        {
+            using (XmlWriter writer = XmlWriter.Create(filePath))
+            {
+                writer.WriteStartDocument();
+                writer.WriteStartElement("Orders"); // Root element
+
+                foreach (DataGridViewRow row in dataGridViewOrders.Rows)
+                {
+                    if (row.IsNewRow) continue;
+
+                    var cell = row.Cells["checkBox"].Value;
+                    bool isChecked = cell != null && Convert.ToBoolean(cell);
+
+                    if (isChecked)
+                    {
+                        string orderID = row.Cells["orderIDDataGridViewTextBoxColumn"].Value?.ToString() ?? "";
+                        string customerName = row.Cells["customerNameDataGridViewTextBoxColumn"].Value?.ToString() ?? "";
+                        string orderDate = row.Cells["orderDateDataGridViewTextBoxColumn"].Value?.ToString() ?? "";
+                        string address = row.Cells["shippingAddressDataGridViewTextBoxColumn"].Value?.ToString() ?? "";
+                        string orderTotal = row.Cells["orderTotalDataGridViewTextBoxColumn"].Value?.ToString() ?? "";
+
+                        writer.WriteStartElement("Order");
+
+                        writer.WriteElementString("customerName", customerName);
+                        writer.WriteElementString("customerAddress", address);
+                        writer.WriteElementString("invoiceDeliveryDate", orderDate);
+                        writer.WriteElementString("productCodeValue", orderID);
+                        writer.WriteElementString("unitPrice", orderTotal);
+                        writer.WriteElementString("unitPriceHUF", orderTotal);
+
+                        writer.WriteEndElement(); // </Order>
+                    }
+                }
+
+                writer.WriteEndElement(); // </Orders>
+                writer.WriteEndDocument();
+            }
         }
 
         public void GenerateXML()
